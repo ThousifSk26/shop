@@ -1,0 +1,703 @@
+---------------products.jsp
+
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+<%@ page import="shoppingcart.Product" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Product List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .card {
+            width: 300px;
+            margin: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .card-header {
+            background-color: #f2f2f2;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .card-body {
+            padding: 12px;
+        }
+        .card-footer {
+            padding: 12px;
+            text-align: center;
+        }
+        .btn-add-to-cart {
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .btn-add-to-cart:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Online Store</h1>
+    
+       <label for="class">Category</label><br>
+        <select id="class" name="class">
+        <option value="" selected disabled></option>
+            <option value="Class A">electronics</option>
+            <option value="Class B">kids</option>
+            <option value="Class C">men</option>
+        </select><br><br>
+    <div class="container">
+        <% 
+            List<Product> products = (List<Product>)request.getAttribute("products");
+            if(products != null) {
+                for(Product product : products) {
+        %>
+        <div class="card">
+            <div class="card-header"><%= product.getProductName() %></div>
+            <div class="card-body">
+                <p><strong>Product ID:</strong> <%= product.getProductId() %></p>
+                <p><strong>Price:</strong> $<%= product.getProductPrice() %></p>
+                <p><strong>HSN:</strong> <%= product.getProductHsn() %></p>
+            </div>
+            <div class="card-footer">
+                <form action="addToCart" method="post">
+                    <input type="hidden" name="productId" value="<%= product.getProductId() %>">
+                    <input type="hidden" name="productName" value="<%= product.getProductName() %>">
+                    <button type="submit" class="btn-add-to-cart">Add to Cart</button>
+                </form>
+            </div>
+        </div>
+        <% 
+                }
+            }
+        %>
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+        <form action="Cart" method="get">
+            <button type="submit">Check Cart Items</button>
+        </form>
+    </div>
+</body>
+</html>
+
+------------------items.jsp
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<%@ page import="java.util.List" %>
+<%@ page import="shoppingcart.Item" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Cart Items</title>
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    .btn-plus, .btn-minus {
+        padding: 5px 10px;
+        cursor: pointer;
+        border: none;
+        background-color: #4caf50;
+        color: white;
+        border-radius: 3px;
+        font-size: 16px;
+    }
+</style>
+</head>
+<body>
+    <h1>Cart Items</h1>
+    <table>
+        <tr>
+            <th>Product ID</th>
+            <th>Product Name</th>
+            <th>Quantity</th>
+            <th>+</th>
+            <th>-</th>
+            <th>Remove from cart</th>
+        </tr>
+        <% 
+            List<Item> items = (List<Item>)request.getAttribute("items");
+            if(items != null) {
+                for(Item item : items) {
+        %>
+        <tr>
+            <td><%= item.getProductId() %></td>
+            <td><%= item.getProductName() %></td>
+            <td id="quantity_<%= item.getProductId() %>"><%= item.getCount() %></td>
+            <td><button class="btn-plus" onclick="incrementQuantity('<%= item.getProductId() %>')">+</button></td>
+            <td><button class="btn-minus" onclick="decrementQuantity('<%= item.getProductId() %>')">-</button></td>
+            <td><button class="btn-remove" onclick="removeItem('<%= item.getProductId() %>')">Remove</button></td>
+            
+        </tr>
+       
+        <% 
+                }
+            }
+        %>
+    </table>
+<button class="btn-buy" onclick="checkout()">Buy</button>
+    <script>
+        function incrementQuantity(productId) {
+            var quantityElement = document.getElementById('quantity_' + productId);
+            var currentQuantity = parseInt(quantityElement.innerText);
+            quantityElement.innerText = currentQuantity + 1;
+        }
+
+        function decrementQuantity(productId) {
+            var quantityElement = document.getElementById('quantity_' + productId);
+            var currentQuantity = parseInt(quantityElement.innerText);
+            if (currentQuantity > 0) {
+                quantityElement.innerText = currentQuantity - 1;
+            }
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        function removeItem(productId) {
+            // Send AJAX request to remove the item from the database
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "RemoveItemServlet", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        // Refresh the page after removing the item
+                        location.reload();
+                    } else {
+                        alert("Failed to remove item.");
+                    }
+                }
+            };
+            xhr.send("productId=" + encodeURIComponent(productId));
+        }
+        
+    
+        
+    </script>
+</body>
+</html>
+
+
+---------------------Product.java
+package shoppingcart;
+
+public class Product {
+	private int productId;
+	private String productName;
+	private int productPrice;
+	private String productHsn;
+
+	public Product(int productId, String productName) {
+
+		this.productId = productId;
+		this.productName = productName;
+		// Default constructor
+	}
+
+	public Product(int productId, String productName, int productPrice, String productHsn) {
+		this.productId = productId;
+		this.productName = productName;
+		this.productPrice = productPrice;
+		this.productHsn = productHsn;
+	}
+
+	public int getProductId() {
+		return productId;
+	}
+
+	public void setProductId(int productId) {
+		this.productId = productId;
+	}
+
+	public String getProductName() {
+		return productName;
+	}
+
+	public void setProductName(String productName) {
+		this.productName = productName;
+	}
+
+	public int getProductPrice() {
+		return productPrice;
+	}
+
+	public void setProductPrice(int productPrice) {
+		this.productPrice = productPrice;
+	}
+
+	public String getProductHsn() {
+		return productHsn;
+	}
+
+	public void setProductHsn(String productHsn) {
+		this.productHsn = productHsn;
+	}
+}
+
+
+--------------------------ProductController.java
+package shoppingcart;
+
+import java.io.IOException;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public class ProductController {
+	private ProductDAO productDAO;
+
+	public ProductController() {
+		this.productDAO = new ProductDAO();
+	}
+
+	public void getAllProducts(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		List<Product> products = productDAO.getAllProducts();
+		request.setAttribute("products", products);
+		request.getRequestDispatcher("products.jsp").forward(request, response);
+	}
+}
+
+
+--------------------------ProductDAO.java
+package shoppingcart;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ProductDAO {
+
+	private String jdbcURL = "jdbc:postgresql://192.168.110.48:5432/plf_training";
+	private String jdbcUsername = "plf_training_admin";
+	private String jdbcPassword = "pff123";
+
+	private static final String SELECT_ALL_PRODUCTS = "SELECT * FROM products181";
+
+	public List<Product> getAllProducts() {
+		List<Product> products = new ArrayList<>();
+
+		// Load PostgreSQL JDBC driver
+		try {
+			Class.forName("org.postgresql.Driver");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace(); // Handle the error as per your requirement
+			return products;
+		}
+
+		// Establish database connection and retrieve products
+		try (Connection connection = DriverManager.getConnection(jdbcURL, jdbcUsername, jdbcPassword);
+				PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_PRODUCTS)) {
+			ResultSet resultSet = preparedStatement.executeQuery();
+			while (resultSet.next()) {
+				int productId = resultSet.getInt("productid");
+				String productName = resultSet.getString("productname");
+				int productPrice = resultSet.getInt("productprice");
+				String productHsn = resultSet.getString("producthsn");
+				Product product = new Product(productId, productName, productPrice, productHsn);
+				products.add(product);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace(); // Handle the error as per your requirement
+		}
+		return products;
+	}
+}
+
+
+
+
+
+-----------------------ProductServlet.java
+package shoppingcart;
+
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/products")
+public class ProductServlet extends HttpServlet {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		ProductController productController = new ProductController();
+		productController.getAllProducts(request, response);
+	}
+}
+
+
+---------------------------ItemController.java
+package shoppingcart;
+
+import java.io.IOException;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public class ItemController {
+	private ItemsDAO itemDAO;
+
+	public ItemController() {
+		this.itemDAO = new ItemsDAO();
+	}
+
+	public void getAllItems(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		List<Item> items = itemDAO.getAllItems();
+		request.setAttribute("items", items);
+		request.getRequestDispatcher("items.jsp").forward(request, response);
+	}
+}
+
+----------------------------ItemsDAO.java
+package shoppingcart;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ItemsDAO {
+
+	private String jdbcURL = "jdbc:postgresql://192.168.110.48:5432/plf_training";
+	private String jdbcUsername = "plf_training_admin";
+	private String jdbcPassword = "pff123";
+
+	private static final String SELECT_ALL_ITEMS = "SELECT * FROM carts181";
+
+	public List<Item> getAllItems() {
+		List<Item> items = new ArrayList<>();
+
+		// Load PostgreSQL JDBC driver
+		try {
+			Class.forName("org.postgresql.Driver");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace(); // Handle the error as per your requirement
+			return items;
+		}
+
+		// Establish database connection and retrieve products
+		try (Connection connection = DriverManager.getConnection(jdbcURL, jdbcUsername, jdbcPassword);
+				PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_ITEMS)) {
+			ResultSet resultSet = preparedStatement.executeQuery();
+			while (resultSet.next()) {
+				int productId = resultSet.getInt("product_id");
+				String productName = resultSet.getString("product_name");
+
+				Item item = new Item(productId, productName);
+				items.add(item);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace(); // Handle the error as per your requirement
+		}
+		return items;
+	}
+}
+
+
+
+
+
+
+---------------------------ItemServlet.java
+package shoppingcart;
+
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/Cart")
+public class ItemServlet extends HttpServlet {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		ItemController itemController = new ItemController();
+		itemController.getAllItems(request, response);
+	}
+}
+
+-------------------Item.java
+package shoppingcart;
+
+public class Item {
+	private int productId;
+	private String productName;
+	private int count;
+
+	public Item(int productId, String productName, int count) {
+
+		this.productId = productId;
+		this.productName = productName;
+		this.count = 1;
+		// Default constructor
+	}
+
+	public int getProductId() {
+		return productId;
+	}
+
+	public void setProductId(int productId) {
+		this.productId = productId;
+	}
+
+	public String getProductName() {
+		return productName;
+	}
+
+	public void setProductName(String productName) {
+		this.productName = productName;
+	}
+
+	public int getCount() {
+		return count;
+	}
+
+	public void setCount(int count) {
+		this.count = count;
+	}
+}
+
+
+------------------------CartDAO.java
+package shoppingcart;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class CartDAO {
+	// JDBC connection details
+	private static final String URL = "jdbc:postgresql://192.168.110.48:5432/plf_training";
+	private static final String USERNAME = "plf_training_admin";
+	private static final String PASSWORD = "pff123";
+
+	public void insertCartItem(int productId, String productName) {
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		// Load PostgreSQL JDBC driver
+		try {
+			Class.forName("org.postgresql.Driver");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace(); // Handle the error as per your requirement
+
+		}
+		try {
+			// Establish JDBC connection
+			conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+
+			String sql = "INSERT INTO carts181 (product_id, product_name) VALUES (?, ?)";
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, productId);
+			stmt.setString(2, productName);
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			// Handle exceptions
+		} finally {
+			// Close connections
+			if (stmt != null) {
+				try {
+					stmt.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+}
+
+
+
+
+
+
+
+---------------CartController.java
+package shoppingcart;
+
+public class CartController {
+	private CartDAO cartDAO;
+
+	public CartController() {
+		this.cartDAO = new CartDAO();
+	}
+
+	public void addToCart(int productId, String productName) {
+		cartDAO.insertCartItem(productId, productName);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+----------------------AddToCartServlet.java
+package shoppingcart;
+
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/addToCart")
+public class AddToCartServlet extends HttpServlet {
+	private CartController cartController;
+
+	@Override
+	public void init() throws ServletException {
+		super.init();
+		cartController = new CartController();
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		int productId = Integer.parseInt(request.getParameter("productId"));
+		String productName = request.getParameter("productName");
+
+		// Add to cart
+		cartController.addToCart(productId, productName);
+
+		// Redirect to some page after adding to cart
+		// response.sendRedirect("products.jsp");
+
+		// Set response content type
+		response.setContentType("text/html");
+
+		// Write response message
+		response.getWriter().println("<html><body>");
+		response.getWriter().println("<h2>Product added successfully!</h2>");
+		response.getWriter().println("</body></html>");
+	}
+}
+
+
+---------------removeservlet
+package shoppingcart;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/RemoveItemServlet")
+public class RemoveItemServlet extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		// Retrieve productId parameter from request
+		int productId = Integer.parseInt(request.getParameter("productId"));
+
+		// Database connection parameters
+		String jdbcURL = "jdbc:postgresql://192.168.110.48:5432/plf_training";
+		String jdbcUsername = "plf_training_admin";
+		String jdbcPassword = "pff123";
+
+		try (Connection connection = DriverManager.getConnection(jdbcURL, jdbcUsername, jdbcPassword)) {
+			// Prepare SQL statement to remove item from carts181 table
+			String sql = "DELETE FROM carts181 WHERE product_id = ?";
+			PreparedStatement statement = connection.prepareStatement(sql);
+			statement.setInt(1, productId);
+
+			// Execute SQL statement
+			int rowsAffected = statement.executeUpdate();
+
+			if (rowsAffected > 0) {
+				// Item successfully removed from the cart
+				response.setStatus(HttpServletResponse.SC_OK);
+			} else {
+				// No item found with the provided productId
+				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			}
+		} catch (SQLException e) {
+			// Handle any database errors
+			e.printStackTrace();
+			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		}
+	}
+}
+
+
+
